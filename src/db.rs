@@ -1,12 +1,12 @@
 use chrono::{ DateTime, Utc };
-use diesel::{ prelude::* };
+use diesel::{ prelude::*, pg::PgConnection};
 use std::{ time::SystemTime };
 use uuid::Uuid;
 use crate::models::{ Room, Participant, Score, RoomResponse, ParticipantUpdate };
 use dotenv::dotenv;
 use std::env;
 
-pub fn insert_room(conn: &mut SqliteConnection, name_value: &str) -> Room {
+pub fn insert_room(conn: &mut PgConnection, name_value: &str) -> Room {
     use crate::schema::rooms::dsl::*;
     let new_room = Room {
         id: Uuid::new_v4().to_string(),
@@ -18,7 +18,7 @@ pub fn insert_room(conn: &mut SqliteConnection, name_value: &str) -> Room {
 }
 
 pub fn insert_participant(
-    conn: &mut SqliteConnection,
+    conn: &mut PgConnection,
     name_value: &str,
     pronouns_value: Option<String>,
     room_id_value: &str
@@ -39,7 +39,7 @@ pub fn insert_participant(
 }
 
 pub fn update_participant(
-    conn: &mut SqliteConnection,
+    conn: &mut PgConnection,
     id_value: String,
     name_value: Option<String>,
     pronouns_value: Option<String>
@@ -59,7 +59,7 @@ pub fn update_participant(
 }
 
 pub fn insert_score(
-    conn: &mut SqliteConnection,
+    conn: &mut PgConnection,
     value_value: &f32,
     participation_id_value: &str
 ) -> Score {
@@ -73,14 +73,14 @@ pub fn insert_score(
     return new_score;
 }
 
-pub fn retrieve_rooms(conn: &mut SqliteConnection) -> Vec<Room> {
+pub fn retrieve_rooms(conn: &mut PgConnection) -> Vec<Room> {
     use crate::schema::rooms::dsl::*;
     let results = rooms.order(created.desc()).limit(10).load::<Room>(conn).expect("Error loading rooms");
 
     return results;
 }
 
-pub fn retrieve_room(conn: &mut SqliteConnection, room_id_parameter: &str) -> RoomResponse {
+pub fn retrieve_room(conn: &mut PgConnection, room_id_parameter: &str) -> RoomResponse {
     use crate::schema::rooms::dsl::*;
     let room_results: Room = rooms.find(room_id_parameter).first(conn).expect("Error loading room");
 
@@ -97,7 +97,7 @@ pub fn retrieve_room(conn: &mut SqliteConnection, room_id_parameter: &str) -> Ro
 }
 
 pub fn retrieve_participants(
-    conn: &mut SqliteConnection,
+    conn: &mut PgConnection,
     room_id_parameter: &Option<String>
 ) -> Vec<Participant> {
     use crate::schema::participants::dsl::*;
@@ -114,7 +114,7 @@ pub fn retrieve_participants(
 }
 
 pub fn retrieve_scores(
-    conn: &mut SqliteConnection,
+    conn: &mut PgConnection,
     participation_id_parameter: &Option<String>
 ) -> Vec<Score> {
     use crate::schema::scores::dsl::*;
@@ -136,11 +136,11 @@ fn iso_date() -> String {
     return now.to_rfc3339();
 }
 
-pub fn establish_connection() -> SqliteConnection {
+pub fn establish_connection() -> PgConnection {
     dotenv().ok();
 
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    SqliteConnection::establish(&database_url).unwrap_or_else(|_|
+    PgConnection::establish(&database_url).unwrap_or_else(|_|
         panic!("Error connecting to {}", database_url)
     )
 }
