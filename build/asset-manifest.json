@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "https://poetry-slam-app.herokuapp.com/static/css/main.3705fad4.css",
-    "main.js": "https://poetry-slam-app.herokuapp.com/static/js/main.18e4fe0c.js",
-    "static/js/787.22edae46.chunk.js": "https://poetry-slam-app.herokuapp.com/static/js/787.22edae46.chunk.js",
-    "index.html": "https://poetry-slam-app.herokuapp.com/index.html",
-    "main.3705fad4.css.map": "https://poetry-slam-app.herokuapp.com/static/css/main.3705fad4.css.map",
-    "main.18e4fe0c.js.map": "https://poetry-slam-app.herokuapp.com/static/js/main.18e4fe0c.js.map",
-    "787.22edae46.chunk.js.map": "https://poetry-slam-app.herokuapp.com/static/js/787.22edae46.chunk.js.map"
+    "main.css": "http://localhost:3000/static/css/main.3705fad4.css",
+    "main.js": "http://localhost:3000/static/js/main.8ec2a8f9.js",
+    "static/js/787.22edae46.chunk.js": "http://localhost:3000/static/js/787.22edae46.chunk.js",
+    "index.html": "http://localhost:3000/index.html",
+    "main.3705fad4.css.map": "http://localhost:3000/static/css/main.3705fad4.css.map",
+    "main.8ec2a8f9.js.map": "http://localhost:3000/static/js/main.8ec2a8f9.js.map",
+    "787.22edae46.chunk.js.map": "http://localhost:3000/static/js/787.22edae46.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.3705fad4.css",
-    "static/js/main.18e4fe0c.js"
+    "static/js/main.8ec2a8f9.js"
   ]
 }
