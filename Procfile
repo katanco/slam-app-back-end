@@ -1,1 +1,1 @@
-web: ./target/slam-app-rust-server
+web: ./target/release/slam-app-rust-server
