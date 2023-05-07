@@ -19,6 +19,7 @@ async fn main() {
     // let manager = ConnectionManager::<SqliteConnection>::new(conn_spec);
     // let pool = r2d2::Pool::builder().build(manager).expect("Failed to create pool.");
 
+    run_migration();
     
     let serve_dir = ServeDir::new("./build").not_found_service(ServeFile::new("./build/index.html"));
 
@@ -31,7 +32,6 @@ async fn main() {
         .layer(CorsLayer::permissive())
         .layer(TraceLayer::new_for_http());
 
-        // let root_url = env::var("ROOT_URL").expect("ROOT_URL must be set");
         let service_port = env::var("PORT").expect("PORT must be set");
         let service_endpoint = format!("{}:{}", "0.0.0.0", service_port);
     axum::Server
@@ -40,14 +40,6 @@ async fn main() {
         .unwrap();
 }
 
-// async fn root() -> Response {
-//     // idk how to make this serve the react build :(
-//     ServeDir::new("../front-end/slam-app-frontend/build");
-    
-//     let serve_dir = ServeDir::new("../front-end/build").not_found_service(ServeFile::new("../front-end/build/index.html"));
-
-//     return (StatusCode::OK, "hello :)").into_response();
-// }
 async fn get_rooms() -> (StatusCode, Json<Vec<Room>>) {
     let rooms_result = retrieve_rooms(&mut establish_connection());
     return (StatusCode::OK, Json(rooms_result));

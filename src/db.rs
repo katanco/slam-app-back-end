@@ -1,10 +1,18 @@
 use chrono::{ DateTime, Utc };
-use diesel::{ prelude::*, pg::PgConnection};
+use diesel::{ prelude::*, pg::PgConnection };
+use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness };
 use std::{ time::SystemTime };
 use uuid::Uuid;
 use crate::models::{ Room, Participant, Score, RoomResponse, ParticipantUpdate };
 use dotenv::dotenv;
 use std::env;
+
+
+pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!();
+
+pub fn run_migration() {
+    establish_connection().run_pending_migrations(MIGRATIONS).unwrap();
+}
 
 pub fn insert_room(conn: &mut PgConnection, name_value: &str) -> Room {
     use crate::schema::rooms::dsl::*;
