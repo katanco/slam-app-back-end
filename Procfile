@@ -1,0 +1,1 @@
+web: ./target/slam-app-rust-server

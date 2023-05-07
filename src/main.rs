@@ -31,9 +31,9 @@ async fn main() {
         .layer(CorsLayer::permissive())
         .layer(TraceLayer::new_for_http());
 
-        let root_url = env::var("ROOT_URL").expect("ROOT_URL must be set");
-        let service_port = env::var("SERVICE_PORT").expect("SERVICE_PORT must be set");
-        let service_endpoint = format!("{}:{}", root_url, service_port);
+        // let root_url = env::var("ROOT_URL").expect("ROOT_URL must be set");
+        let service_port = env::var("PORT").expect("PORT must be set");
+        let service_endpoint = format!("{}:{}", "0.0.0.0", service_port);
     axum::Server
         ::bind(&service_endpoint.parse().unwrap())
         .serve(app.into_make_service()).await
