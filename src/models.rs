@@ -50,11 +50,10 @@ pub struct Participation {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RoomRequest {
-    pub name: String,
+    pub name: Option<String>,
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ParticipantRequest {
-    pub id: Option<String>,
     pub name: Option<String>,
     pub pronouns: Option<String>,
     pub room_id: Option<String>,
@@ -62,7 +61,7 @@ pub struct ParticipantRequest {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ScoreRequest {
     pub value: f32,
-    pub participant_id: String,
+    pub participation_id: String,
 }
 
 // Updates
@@ -71,6 +70,12 @@ pub struct ScoreRequest {
 pub struct ParticipantUpdate {
     pub name: Option<String>,
     pub pronouns: Option<String>,
+}
+
+#[derive(AsChangeset)]
+#[diesel(table_name = rooms)]
+pub struct RoomUpdate {
+    pub name: Option<String>,
 }
 
 // Response

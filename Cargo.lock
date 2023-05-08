@@ -274,6 +274,7 @@ dependencies = [
  "byteorder",
  "diesel_derives",
  "itoa",
+ "libsqlite3-sys",
  "pq-sys",
 ]
 
@@ -517,6 +518,17 @@ name = "libc"
 version = "0.2.142"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6a987beff54b60ffa6d51982e1aa1146bc42f19bd26be28b0586f252fccf5317"
+
+[[package]]
+name = "libsqlite3-sys"
+version = "0.26.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "afc22eff61b133b115c6e8c74e818c628d6d5e7a502afea6f64dee076dd94326"
+dependencies = [
+ "cc",
+ "pkg-config",
+ "vcpkg",
+]
 
 [[package]]
 name = "link-cplusplus"
@@ -881,6 +893,7 @@ dependencies = [
  "diesel",
  "diesel_migrations",
  "dotenv",
+ "libsqlite3-sys",
  "serde",
  "serde_json",
  "tokio",
