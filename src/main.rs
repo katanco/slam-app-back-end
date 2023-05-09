@@ -23,11 +23,13 @@ async fn main() {
 
     let app = Router::new()
         .route("/data/room", get(get_rooms).post(post_room))
-        .route("/data/participant", get(get_participants).post(post_participant))
-        .route("/data/participant/:id", patch(patch_participant).delete(delete_participant))
-        .route("/data/score", get(get_scores).post(post_score))
         .route("/data/room/:id", get(get_room).patch(patch_room).delete(delete_room))
         .route("/data/room/:id/advance", post(advance_room))
+        .route("/data/participant", get(get_participants).post(post_participant))
+        .route("/data/participant/:id", patch(patch_participant).delete(delete_participant))
+        .route("/data/round/:id", get(get_round))
+        .route("/data/participation/:id", patch(patch_participation))
+        .route("/data/score", get(get_scores).post(post_score))
         .fallback_service(serve_dir)
         .layer(CorsLayer::permissive())
         .layer(TraceLayer::new_for_http());
@@ -115,4 +117,18 @@ async fn get_scores(params: Query<ScoreFilter>) -> Response {
 async fn advance_room(Path(id): Path<String>, Json(payload): Json<Vec<Participant>>) -> Response {
     let result = create_next_round(&mut establish_connection(), &id, payload);
     return (StatusCode::CREATED, Json(result)).into_response();
+}
+
+
+async fn get_round(Path(id): Path<String>) -> Response {
+    let result = retrieve_round(&mut establish_connection(), &id);
+    return (StatusCode::OK, Json(result)).into_response();
+}
+
+async fn patch_participation(
+    Path(id): Path<String>,
+    Json(payload): Json<ParticipationRequest>
+) -> Response {
+    update_participation(&mut establish_connection(), id, payload.notes, payload.length);
+    return (StatusCode::OK, "Updated").into_response();
 }

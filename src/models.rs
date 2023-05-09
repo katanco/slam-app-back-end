@@ -40,8 +40,8 @@ pub struct Participation {
     pub performance_notes: Option<String>,
     pub performance_length_in_seconds: Option<i32>,
     pub deduction: Option<f32>,
-    pub performance_order: i32,
     pub score: Option<f32>,
+    pub performance_order: i32,
     pub round_id: String,
     pub participant_id: String,
 }
@@ -63,6 +63,11 @@ pub struct ScoreRequest {
     pub value: f32,
     pub participation_id: String,
 }
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ParticipationRequest {
+    pub notes: Option<String>,
+    pub length: Option<i32>,
+}
 
 // Updates
 #[derive(AsChangeset)]
@@ -78,17 +83,30 @@ pub struct RoomUpdate {
     pub name: Option<String>,
 }
 
+#[derive(AsChangeset)]
+#[diesel(table_name = participations)]
+pub struct ParticipationUpdate {
+    pub performance_notes: Option<String>,
+    pub performance_length_in_seconds: Option<i32>,
+    pub deduction: Option<f32>,
+    pub score: Option<f32>,
+}
+
+
+
 // Response
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RoomResponse {
     pub room: Room,
     pub participants: Vec<Participant>,
+    pub rounds: Vec<Round>
 }
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ParticipantResponse {
-    pub participant: Participant,
-    pub scores: Vec<Score>,
+pub struct RoundResponse {
+    pub round: Round,
+    pub participations: Vec<Participation>
 }
 
 // Filter

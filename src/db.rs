@@ -1,5 +1,5 @@
 use chrono::{ DateTime, Utc };
-use diesel::{ prelude::*, sqlite::SqliteConnection };
+use diesel::{ prelude::*, pg::PgConnection };
 use diesel_migrations::{ embed_migrations, EmbeddedMigrations, MigrationHarness };
 use std::{ time::SystemTime };
 use uuid::Uuid;
@@ -13,7 +13,7 @@ pub fn run_migration() {
     establish_connection().run_pending_migrations(MIGRATIONS).unwrap();
 }
 
-pub fn insert_room(conn: &mut SqliteConnection, name_value: &str) -> Room {
+pub fn insert_room(conn: &mut PgConnection, name_value: &str) -> Room {
     use crate::schema::rooms::dsl::*;
     let new_room = Room {
         id: Uuid::new_v4().to_string(),
@@ -25,7 +25,7 @@ pub fn insert_room(conn: &mut SqliteConnection, name_value: &str) -> Room {
 }
 
 pub fn insert_participant(
-    conn: &mut SqliteConnection,
+    conn: &mut PgConnection,
     name_value: &str,
     pronouns_value: Option<String>,
     room_id_value: &str
@@ -46,7 +46,7 @@ pub fn insert_participant(
 }
 
 pub fn update_room(
-    conn: &mut SqliteConnection,
+    conn: &mut PgConnection,
     id_value: String,
     name_value: Option<String>
 ) -> usize {
@@ -64,7 +64,7 @@ pub fn update_room(
 }
 
 pub fn update_participant(
-    conn: &mut SqliteConnection,
+    conn: &mut PgConnection,
     id_value: String,
     name_value: Option<String>,
     pronouns_value: Option<String>
@@ -83,7 +83,36 @@ pub fn update_participant(
     return result;
 }
 
-pub fn remove_room(conn: &mut SqliteConnection, id_value: String) -> usize {
+pub fn update_participation(
+    conn: &mut PgConnection,
+    id_value: String,
+    notes_value: Option<String>,
+    length_value: Option<i32>
+) -> usize {
+    use crate::schema::participations::dsl::*;
+    let mut deduction_value = None;
+    if let Some(length) = length_value {
+        if length > 190 {
+            deduction_value = Some((((length as f32) - 190_f32) / 10_f32).floor() * 0.5);
+        }
+    }
+
+    let result = diesel
+        ::update(participations.filter(id.eq(id_value)))
+        .set(
+            &(ParticipationUpdate {
+                performance_length_in_seconds: length_value,
+                performance_notes: notes_value,
+                deduction: deduction_value,
+                score: None,
+            })
+        )
+        .execute(conn)
+        .expect("unable to update participation");
+    return result;
+}
+
+pub fn remove_room(conn: &mut PgConnection, id_value: String) -> usize {
     use crate::schema::rooms::dsl::*;
     let id_value_clone = id_value.clone();
 
@@ -101,7 +130,7 @@ pub fn remove_room(conn: &mut SqliteConnection, id_value: String) -> usize {
     return result;
 }
 
-pub fn remove_participant(conn: &mut SqliteConnection, id_value: String) -> usize {
+pub fn remove_participant(conn: &mut PgConnection, id_value: String) -> usize {
     use crate::schema::participants::dsl::*;
     let result = diesel
         ::delete(participants.filter(id.eq(id_value)))
@@ -111,7 +140,7 @@ pub fn remove_participant(conn: &mut SqliteConnection, id_value: String) -> usiz
 }
 
 pub fn insert_score(
-    conn: &mut SqliteConnection,
+    conn: &mut PgConnection,
     value_value: &f32,
     participation_id_value: &str
 ) -> Score {
@@ -122,10 +151,40 @@ pub fn insert_score(
         participation_id: participation_id_value.to_string(),
     };
     diesel::insert_into(scores).values(&new_score).execute(conn).expect("Error inserting score");
+
+    let _scores: Vec<Score> = scores
+        .filter(participation_id.eq(participation_id_value))
+        .order(value.asc())
+        .load::<Score>(conn)
+        .expect("Error aggregating scores");
+
+    if _scores.len() == 5 {
+        let mut aggregate_score = 0_f32;
+        for (pos, score_iter) in _scores.iter().enumerate() {
+            if pos != 0 && pos != 4 {
+                aggregate_score += score_iter.value;
+            }
+        }
+
+        use crate::schema::participations::dsl::*;
+        diesel
+            ::update(participations.filter(id.eq(participation_id_value)))
+            .set(
+                &(ParticipationUpdate {
+                    performance_length_in_seconds: None,
+                    performance_notes: None,
+                    deduction: None,
+                    score: Some(aggregate_score),
+                })
+            )
+            .execute(conn)
+            .expect("unable to update participation");
+    }
+
     return new_score;
 }
 
-pub fn retrieve_rooms(conn: &mut SqliteConnection) -> Vec<Room> {
+pub fn retrieve_rooms(conn: &mut PgConnection) -> Vec<Room> {
     use crate::schema::rooms::dsl::*;
     let results = rooms
         .order(created.desc())
@@ -136,24 +195,53 @@ pub fn retrieve_rooms(conn: &mut SqliteConnection) -> Vec<Room> {
     return results;
 }
 
-pub fn retrieve_room(conn: &mut SqliteConnection, room_id_parameter: &str) -> RoomResponse {
+pub fn retrieve_room(conn: &mut PgConnection, room_id_parameter: &str) -> RoomResponse {
     use crate::schema::rooms::dsl::*;
     let room_results: Room = rooms.find(room_id_parameter).first(conn).expect("Error loading room");
 
     use crate::schema::participants::dsl::*;
     let match_value = room_id_parameter.to_owned();
     let participant_results = participants
-        .filter(room_id.eq(match_value))
+        .filter(crate::schema::participants::dsl::room_id.eq(match_value.clone()))
         .load::<Participant>(conn)
         .expect("Error loading participants");
 
-    let results = RoomResponse { room: room_results, participants: participant_results };
+    use crate::schema::rounds::dsl::*;
+    let round_results = rounds
+        .filter(crate::schema::rounds::dsl::room_id.eq(match_value))
+        .load::<Round>(conn)
+        .expect("Error loading rounds");
+
+    let results = RoomResponse {
+        room: room_results,
+        participants: participant_results,
+        rounds: round_results,
+    };
+
+    return results;
+}
+
+pub fn retrieve_round(conn: &mut PgConnection, round_id_parameter: &str) -> RoundResponse {
+    use crate::schema::rounds::dsl::*;
+    let round_results: Round = rounds
+        .find(round_id_parameter)
+        .first(conn)
+        .expect("Error loading round");
+
+    use crate::schema::participations::dsl::*;
+    let match_value = round_id_parameter.to_owned();
+    let participation_results = participations
+        .filter(round_id.eq(match_value))
+        .load::<Participation>(conn)
+        .expect("Error loading participations");
+
+    let results = RoundResponse { round: round_results, participations: participation_results };
 
     return results;
 }
 
 pub fn create_next_round(
-    conn: &mut SqliteConnection,
+    conn: &mut PgConnection,
     room_id_parameter: &str,
     participants: Vec<Participant>
 ) -> Round {
@@ -194,22 +282,22 @@ pub fn create_next_round(
             performance_length_in_seconds: None,
             performance_notes: None,
             score: None,
-        })
+        });
     }
 
     use crate::schema::participations::dsl::*;
-    
+
     diesel
-    ::insert_into(participations)
-    .values(vec)
-    .execute(conn)
-    .expect("Error inserting participations");
+        ::insert_into(participations)
+        .values(vec)
+        .execute(conn)
+        .expect("Error inserting participations");
 
     return new_round;
 }
 
 pub fn retrieve_participants(
-    conn: &mut SqliteConnection,
+    conn: &mut PgConnection,
     room_id_parameter: &Option<String>
 ) -> Vec<Participant> {
     use crate::schema::participants::dsl::*;
@@ -226,7 +314,7 @@ pub fn retrieve_participants(
 }
 
 pub fn retrieve_scores(
-    conn: &mut SqliteConnection,
+    conn: &mut PgConnection,
     participation_id_parameter: &Option<String>
 ) -> Vec<Score> {
     use crate::schema::scores::dsl::*;
@@ -248,11 +336,11 @@ fn iso_date() -> String {
     return now.to_rfc3339();
 }
 
-pub fn establish_connection() -> SqliteConnection {
+pub fn establish_connection() -> PgConnection {
     dotenv().ok();
 
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    SqliteConnection::establish(&database_url).unwrap_or_else(|_|
+    PgConnection::establish(&database_url).unwrap_or_else(|_|
         panic!("Error connecting to {}", database_url)
     )
 }
