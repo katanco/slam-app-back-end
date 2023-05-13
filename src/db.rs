@@ -37,6 +37,26 @@ pub fn insert_participant(
         pronouns: pronouns_value,
         room_id: room_id_value.to_string(),
     };
+    let existing_participant: Option<Participant> = participants
+        .filter(name.eq(name_value))
+        .first(conn)
+        .optional()
+        .unwrap();
+    if existing_participant.is_some() {
+        panic!("Existing participant");
+    }
+    {
+        use crate::schema::rooms::dsl::*;
+        let matching_room: Option<Room> = rooms
+            .filter(id.eq(room_id_value))
+            .first(conn)
+            .optional()
+            .unwrap();
+        if matching_room.is_none() {
+            panic!("No matching room id");
+        }
+    }
+
     diesel
         ::insert_into(participants)
         .values(&new_participant)
@@ -45,11 +65,7 @@ pub fn insert_participant(
     return new_participant;
 }
 
-pub fn update_room(
-    conn: &mut PgConnection,
-    id_value: String,
-    name_value: Option<String>
-) -> usize {
+pub fn update_room(conn: &mut PgConnection, id_value: String, name_value: Option<String>) -> usize {
     use crate::schema::rooms::dsl::*;
     let result = diesel
         ::update(rooms.filter(id.eq(id_value)))
