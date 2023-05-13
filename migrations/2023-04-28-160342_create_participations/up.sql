@@ -7,5 +7,5 @@ CREATE TABLE participations (
     score REAL,
     performance_order INTEGER NOT NULL,
     round_id TEXT REFERENCES rounds(id) NOT NULL,
-    participant_id TEXT REFERENCES participant(id) NOT NULL
+    participant_id TEXT REFERENCES participants(id) NOT NULL
 );  

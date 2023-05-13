@@ -2,7 +2,7 @@
 ALTER TABLE
     scores
 ADD
-    participation_id TEXT REFERENCES participation(id) NOT NULL;
+    participation_id TEXT REFERENCES participations(id) NOT NULL;
 
 ALTER TABLE
     rooms
