@@ -274,7 +274,6 @@ dependencies = [
  "byteorder",
  "diesel_derives",
  "itoa",
- "libsqlite3-sys",
  "pq-sys",
 ]
 
