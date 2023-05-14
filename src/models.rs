@@ -70,6 +70,7 @@ pub struct ParticipantRequest {
 pub struct ScoreRequest {
     pub value: f32,
     pub participation_id: String,
+    pub submitter_id: String
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ParticipationRequest {

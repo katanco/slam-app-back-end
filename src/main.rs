@@ -25,6 +25,7 @@ async fn main() {
         .route("/data/room", get(get_rooms).post(post_room))
         .route("/data/room/:id", get(get_room).patch(patch_room).delete(delete_room))
         .route("/data/room/:id/advance", post(advance_room))
+        .route("/data/room/:id/current", get(current_room))
         .route("/data/participant", get(get_participants).post(post_participant))
         .route("/data/participant/:id", patch(patch_participant).delete(delete_participant))
         .route("/data/round/:id", get(get_round))
@@ -99,7 +100,8 @@ async fn post_score(Json(payload): Json<ScoreRequest>) -> (StatusCode, Json<Scor
     let score_result = insert_score(
         &mut establish_connection(),
         &payload.value,
-        &payload.participation_id
+        &payload.participation_id,
+        &payload.submitter_id
     );
 
     return (StatusCode::CREATED, Json(score_result));
@@ -131,4 +133,15 @@ async fn patch_participation(
 ) -> Response {
     update_participation(&mut establish_connection(), id, payload.notes, payload.length);
     return (StatusCode::OK, "Updated").into_response();
+}
+
+async fn current_room(Path(id): Path<String>) -> Response {
+    
+    let room_result = retrieve_room(&mut establish_connection(), id.as_str());
+    if let Some(round_id) = room_result.room.round_id_current {
+    let result = retrieve_round(&mut establish_connection(), &round_id);
+    return (StatusCode::OK, Json(result)).into_response();
+    } else {
+        return (StatusCode::INTERNAL_SERVER_ERROR).into_response();
+    }
 }

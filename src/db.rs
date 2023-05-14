@@ -160,17 +160,25 @@ pub fn remove_participant(conn: &mut PgConnection, id_value: String) -> usize {
 pub fn insert_score(
     conn: &mut PgConnection,
     value_value: &f32,
-    participation_id_value: &str
+    participation_id_value: &str,
+    submitter_id_value: &str
 ) -> Score {
     use crate::schema::scores::dsl::*;
     let new_score = Score {
         id: Uuid::new_v4().to_string(),
         value: value_value.to_owned(),
-        submitter_id: None,
+        submitter_id: Some(submitter_id_value.to_string()),
         participation_id: participation_id_value.to_string(),
     };
-    diesel::insert_into(scores).values(&new_score).execute(conn).expect("Error inserting score");
 
+    let existing_score: Option<Score> = scores.filter(submitter_id.eq(submitter_id_value)).filter(participation_id.eq(participation_id_value)).first(conn).optional().unwrap();
+
+    match existing_score {
+        None => diesel::insert_into(scores).values(&new_score).execute(conn).expect("Error inserting score"),
+        Some(score) => diesel::update(scores).filter(id.eq(score.id)).set(value.eq(value_value)).execute(conn).expect("Error updating score"),
+    };
+
+    
     let _scores: Vec<Score> = scores
         .filter(participation_id.eq(participation_id_value))
         .order(value.asc())
