@@ -19,6 +19,8 @@ pub fn insert_room(conn: &mut PgConnection, name_value: &str) -> Room {
         id: Uuid::new_v4().to_string(),
         name: name_value.to_owned(),
         created: iso_date(),
+        round_id_current: None,
+        participation_id_current: None,
     };
     diesel::insert_into(rooms).values(&new_room).execute(conn).expect("Error inserting room");
     return new_room;
@@ -164,6 +166,7 @@ pub fn insert_score(
     let new_score = Score {
         id: Uuid::new_v4().to_string(),
         value: value_value.to_owned(),
+        submitter_id: None,
         participation_id: participation_id_value.to_string(),
     };
     diesel::insert_into(scores).values(&new_score).execute(conn).expect("Error inserting score");
@@ -244,14 +247,25 @@ pub fn retrieve_round(conn: &mut PgConnection, round_id_parameter: &str) -> Roun
         .first(conn)
         .expect("Error loading round");
 
-    use crate::schema::participations::dsl::*;
-    let match_value = round_id_parameter.to_owned();
-    let participation_results = participations
-        .filter(round_id.eq(match_value))
-        .load::<Participation>(conn)
+    use crate::schema::participants::dsl::*;
+
+    let participation_results: Vec<(Participation, Participant)> = Participation::belonging_to(
+        &round_results
+    )
+        .inner_join(participants)
+        .select((Participation::as_select(), Participant::as_select()))
+        .load::<(Participation, Participant)>(conn)
         .expect("Error loading participations");
 
-    let results = RoundResponse { round: round_results, participations: participation_results };
+    let transformed_participation_results = participation_results
+        .into_iter()
+        .map(|(participation, participant)| ParticipationResponse { participation, participant })
+        .collect();
+
+    let results = RoundResponse {
+        round: round_results,
+        participations: transformed_participation_results,
+    };
 
     return results;
 }
@@ -282,6 +296,14 @@ pub fn create_next_round(
         round_number: new_round_number,
     };
     diesel::insert_into(rounds).values(&new_round).execute(conn).expect("Error inserting round");
+
+    use crate::schema::rooms::dsl::*;
+    diesel
+        ::update(rooms)
+        .filter(crate::schema::rooms::id.eq(room_id_parameter))
+        .set(round_id_current.eq(&new_round.id))
+        .execute(conn)
+        .expect("Error updating room");
 
     let mut vec: Vec<Participation> = Vec::new();
     let parameter_round_id = &new_round.id;

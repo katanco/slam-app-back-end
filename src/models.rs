@@ -1,6 +1,6 @@
 use serde::{ Deserialize, Serialize };
 use crate::schema::*;
-use diesel::{ Insertable, Queryable, AsChangeset, Identifiable };
+use diesel::{ Insertable, Queryable, AsChangeset, Identifiable, Associations, Selectable };
 
 // Tables
 
@@ -10,8 +10,11 @@ pub struct Room {
     pub id: String,
     pub name: String,
     pub created: String,
+    pub round_id_current: Option<String>,
+    pub participation_id_current: Option<String>,
 }
-#[derive(Debug, Clone, Serialize, Deserialize, Insertable, Queryable, Identifiable)]
+#[derive(Debug, Clone, Serialize, Deserialize, Insertable, Selectable, Queryable, Identifiable, Associations)]
+#[diesel(belongs_to(Room))]
 #[diesel(table_name = participants)]
 pub struct Participant {
     pub id: String,
@@ -19,21 +22,26 @@ pub struct Participant {
     pub pronouns: Option<String>,
     pub room_id: String,
 }
-#[derive(Debug, Clone, Serialize, Deserialize, Insertable, Queryable)]
+#[derive(Debug, Clone, Serialize, Deserialize, Insertable, Selectable, Queryable, Identifiable, Associations)]
+#[diesel(belongs_to(Participation))]
 #[diesel(table_name = scores)]
 pub struct Score {
     pub id: String,
     pub value: f32,
+    pub submitter_id: Option<String>,
     pub participation_id: String,
 }
-#[derive(Debug, Clone, Serialize, Deserialize, Insertable, Queryable)]
+#[derive(Debug, Clone, Serialize, Deserialize, Insertable, Selectable, Queryable, Identifiable, Associations)]
+#[diesel(belongs_to(Room))]
 #[diesel(table_name = rounds)]
 pub struct Round {
     pub id: String,
     pub round_number: i32,
     pub room_id: String,
 }
-#[derive(Debug, Clone, Serialize, Deserialize, Insertable, Queryable)]
+#[derive(Debug, Clone, Serialize, Deserialize, Insertable, Selectable, Queryable, Identifiable, Associations)]
+#[diesel(belongs_to(Round))]
+#[diesel(belongs_to(Participant))]
 #[diesel(table_name = participations)]
 pub struct Participation {
     pub id: String,
@@ -106,7 +114,13 @@ pub struct RoomResponse {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RoundResponse {
     pub round: Round,
-    pub participations: Vec<Participation>
+    pub participations: Vec<ParticipationResponse>
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ParticipationResponse {
+    pub participation: Participation,
+    pub participant: Participant
 }
 
 // Filter
