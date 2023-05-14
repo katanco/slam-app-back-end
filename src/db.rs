@@ -287,6 +287,7 @@ pub fn create_next_round(
 
     let previous_round_response: Option<Round> = rounds
         .filter(room_id.eq(room_id_parameter))
+        .order(round_number.desc())
         .first(conn)
         .optional()
         .unwrap();
