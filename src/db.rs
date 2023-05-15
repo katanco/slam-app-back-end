@@ -3,7 +3,7 @@ use diesel::{ prelude::*, pg::PgConnection };
 use diesel_migrations::{ embed_migrations, EmbeddedMigrations, MigrationHarness };
 use std::{ time::SystemTime };
 use uuid::Uuid;
-use crate::models::*;
+use crate::{models::*, schema::participations::performance_order};
 use dotenv::dotenv;
 use std::env;
 
@@ -262,6 +262,7 @@ pub fn retrieve_round(conn: &mut PgConnection, round_id_parameter: &str) -> Roun
     let participation_results: Vec<(Participation, Participant)> = Participation::belonging_to(
         &round_results
     )
+        .order(performance_order.asc())
         .inner_join(participants)
         .select((Participation::as_select(), Participant::as_select()))
         .load::<(Participation, Participant)>(conn)
