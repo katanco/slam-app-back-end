@@ -40,7 +40,7 @@ pub fn insert_participant(
         room_id: room_id_value.to_string(),
     };
     let existing_participant: Option<Participant> = participants
-        .filter(name.eq(name_value))
+        .filter(name.eq(name_value).and(room_id.eq(room_id_value)))
         .first(conn)
         .optional()
         .unwrap();
@@ -134,10 +134,6 @@ pub fn remove_room(conn: &mut PgConnection, id_value: String) -> usize {
     use crate::schema::rooms::dsl::*;
     let id_value_clone = id_value.clone();
 
-    let result = diesel
-        ::delete(rooms.filter(id.eq(id_value)))
-        .execute(conn)
-        .expect("unable to delete room");
     {
         use crate::schema::participants::dsl::*;
         diesel
@@ -145,6 +141,12 @@ pub fn remove_room(conn: &mut PgConnection, id_value: String) -> usize {
             .execute(conn)
             .expect("unable to delete participants");
     }
+
+    let result = diesel
+        ::delete(rooms.filter(id.eq(id_value)))
+        .execute(conn)
+        .expect("unable to delete room");
+    
     return result;
 }
 
