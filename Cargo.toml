@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-axum = "0.6.1"
+axum = { version = "0.6.1", features = ["ws"] }
 tokio = { version = "1.23.0", features = ["full"] }
 tower = { version = "0.4.13", features = ["timeout"] }
 serde = { version = "1.0.138", features = ["derive"] }
@@ -18,3 +18,5 @@ tower-http = { version = "0.4.0", features = ["full"] }
 diesel_migrations = "2.0.0"
 libsqlite3-sys = { version="0.26.0", features = ["bundled"] }
 diesel = { version="2.0.4", features = ["postgres"] }
+futures = "0.3.28"
+tokio-stream = "0.1.14"
