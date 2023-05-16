@@ -132,15 +132,6 @@ pub fn update_participation(
 
 pub fn remove_room(conn: &mut PgConnection, id_value: String) -> usize {
     use crate::schema::rooms::dsl::*;
-    let id_value_clone = id_value.clone();
-
-    {
-        use crate::schema::participants::dsl::*;
-        diesel
-            ::delete(participants.filter(room_id.eq(id_value_clone)))
-            .execute(conn)
-            .expect("unable to delete participants");
-    }
 
     let result = diesel
         ::delete(rooms.filter(id.eq(id_value)))

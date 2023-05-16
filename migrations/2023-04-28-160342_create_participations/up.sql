@@ -6,6 +6,6 @@ CREATE TABLE participations (
     deduction REAL,
     score REAL,
     performance_order INTEGER NOT NULL,
-    round_id TEXT REFERENCES rounds(id) NOT NULL,
-    participant_id TEXT REFERENCES participants(id) NOT NULL
+    round_id TEXT REFERENCES rounds(id) ON DELETE CASCADE NOT NULL,
+    participant_id TEXT REFERENCES participants(id) ON DELETE CASCADE NOT NULL
 );  

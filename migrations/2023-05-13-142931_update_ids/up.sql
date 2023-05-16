@@ -2,7 +2,7 @@
 ALTER TABLE
     scores
 ADD
-    participation_id TEXT REFERENCES participations(id) NOT NULL;
+    participation_id TEXT REFERENCES participations(id) ON DELETE CASCADE NOT NULL;
 
 ALTER TABLE
     rooms
