@@ -11,8 +11,8 @@ use axum::{
 use tower_http::{ trace::TraceLayer, cors::CorsLayer, services::ServeDir, services::ServeFile };
 use dotenv::dotenv;
 use slam_app_rust_server::{ db::*, models::* };
-use tokio::{sync::broadcast };
-use futures::{sink::SinkExt, stream::StreamExt};
+use tokio::{ sync::broadcast };
+use futures::{ sink::SinkExt, stream::StreamExt };
 
 #[derive(Clone)]
 struct AppState {
@@ -62,7 +62,6 @@ async fn websocket_handler(ws: WebSocketUpgrade, State(state): State<Arc<AppStat
 async fn handle_socket(socket: WebSocket, state: Arc<AppState>) {
     let (mut sender, mut receiver) = socket.split();
 
-    
     let mut rx = state.tx.subscribe();
 
     let mut send_task = tokio::spawn(async move {
@@ -85,7 +84,7 @@ async fn handle_socket(socket: WebSocket, state: Arc<AppState>) {
     tokio::select! {
         _ = (&mut send_task) => recv_task.abort(),
         _ = (&mut recv_task) => send_task.abort(),
-    };
+    }
 }
 
 async fn get_rooms() -> (StatusCode, Json<Vec<Room>>) {
@@ -141,13 +140,18 @@ async fn post_participant(Json(payload): Json<ParticipantRequest>) -> Response {
         return (StatusCode::BAD_REQUEST, "send better params pls").into_response();
     }
 }
-async fn post_score(Json(payload): Json<ScoreRequest>) -> (StatusCode, Json<Score>) {
+async fn post_score(
+    State(state): State<Arc<AppState>>,
+    Json(payload): Json<ScoreRequest>
+) -> (StatusCode, Json<Score>) {
     let score_result = insert_score(
         &mut establish_connection(),
         &payload.value,
         &payload.participation_id,
         &payload.submitter_id
     );
+
+    let _ = state.tx.send("score submitted".to_owned()).expect("unable to send score message");
 
     return (StatusCode::CREATED, Json(score_result));
 }
