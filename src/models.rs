@@ -133,4 +133,5 @@ pub struct ParticipantFilter {
 #[derive(Serialize, Deserialize)]
 pub struct ScoreFilter {
     pub participation_id: Option<String>,
+    pub submitter_id: Option<String>,
 }

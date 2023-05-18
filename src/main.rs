@@ -161,7 +161,7 @@ async fn get_participants(params: Query<ParticipantFilter>) -> Response {
 }
 
 async fn get_scores(params: Query<ScoreFilter>) -> Response {
-    let result = retrieve_scores(&mut establish_connection(), &params.participation_id);
+    let result = retrieve_scores(&mut establish_connection(), &params.participation_id, &params.submitter_id);
     return (StatusCode::OK, Json(result)).into_response();
 }
 

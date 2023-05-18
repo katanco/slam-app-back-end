@@ -356,7 +356,8 @@ pub fn retrieve_participants(
 
 pub fn retrieve_scores(
     conn: &mut PgConnection,
-    participation_id_parameter: &Option<String>
+    participation_id_parameter: &Option<String>,
+    submitter_id_parameter: &Option<String>
 ) -> Vec<Score> {
     use crate::schema::scores::dsl::*;
 
@@ -364,6 +365,10 @@ pub fn retrieve_scores(
 
     if let Some(participation_id_parameter) = participation_id_parameter {
         query = query.filter(participation_id.eq(participation_id_parameter));
+    }
+    
+    if let Some(submitter_id_parameter) = submitter_id_parameter {
+        query = query.filter(submitter_id.eq(submitter_id_parameter));
     }
 
     let results = query.load::<Score>(conn).expect("Error loading scores");
