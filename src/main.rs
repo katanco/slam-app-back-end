@@ -161,7 +161,11 @@ async fn get_participants(params: Query<ParticipantFilter>) -> Response {
 }
 
 async fn get_scores(params: Query<ScoreFilter>) -> Response {
-    let result = retrieve_scores(&mut establish_connection(), &params.participation_id, &params.submitter_id);
+    let result = retrieve_scores(
+        &mut establish_connection(),
+        &params.participation_id,
+        &params.submitter_id
+    );
     return (StatusCode::OK, Json(result)).into_response();
 }
 
@@ -177,10 +181,14 @@ async fn get_round(Path(id): Path<String>) -> Response {
 }
 
 async fn patch_participation(
+    State(state): State<Arc<AppState>>,
     Path(id): Path<String>,
     Json(payload): Json<ParticipationRequest>
 ) -> Response {
     update_participation(&mut establish_connection(), id, payload.notes, payload.length);
+
+    let _ = state.tx.send("deduction submitted".to_owned()).expect("unable to send score message");
+
     return (StatusCode::OK, "Updated").into_response();
 }
 
