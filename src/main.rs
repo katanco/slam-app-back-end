@@ -8,6 +8,7 @@ use axum::{
     extract::{ Query, Path, ws::{ WebSocketUpgrade, WebSocket, Message }, State },
     response::{ IntoResponse, Response },
 };
+use serde_json::json;
 use tower_http::{ trace::TraceLayer, cors::CorsLayer, services::ServeDir, services::ServeFile };
 use dotenv::dotenv;
 use slam_app_rust_server::{ db::*, models::* };
@@ -143,7 +144,7 @@ async fn post_participant(Json(payload): Json<ParticipantRequest>) -> Response {
 async fn post_score(
     State(state): State<Arc<AppState>>,
     Json(payload): Json<ScoreRequest>
-) -> (StatusCode, Json<Score>) {
+) -> Response {
     let score_result = insert_score(
         &mut establish_connection(),
         &payload.value,
@@ -151,9 +152,16 @@ async fn post_score(
         &payload.submitter_id
     );
 
-    let _ = state.tx.send("score submitted".to_owned()).expect("unable to send score message");
+    let websocket_response = WebsocketResponse {
+        action: "score submitted".to_owned(),
+        id: payload.participation_id,
+    };
 
-    return (StatusCode::CREATED, Json(score_result));
+    let _ = state.tx
+        .send(json!(websocket_response).to_string())
+        .expect("unable to send score message");
+
+    return (StatusCode::CREATED, Json(score_result)).into_response();
 }
 async fn get_participants(params: Query<ParticipantFilter>) -> Response {
     let result = retrieve_participants(&mut establish_connection(), &params.room_id);
@@ -185,9 +193,17 @@ async fn patch_participation(
     Path(id): Path<String>,
     Json(payload): Json<ParticipationRequest>
 ) -> Response {
+    let id_value = id.to_string();
     update_participation(&mut establish_connection(), id, payload.notes, payload.length);
 
-    let _ = state.tx.send("deduction submitted".to_owned()).expect("unable to send score message");
+    let websocket_response = WebsocketResponse {
+        action: "deduction submitted".to_owned(),
+        id: id_value,
+    };
+
+    let _ = state.tx
+        .send(json!(websocket_response).to_string())
+        .expect("unable to send score message");
 
     return (StatusCode::OK, "Updated").into_response();
 }

@@ -124,6 +124,12 @@ pub struct ParticipationResponse {
     pub participant: Participant
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WebsocketResponse {
+    pub action: String,
+    pub id: String
+}
+
 // Filter
 
 #[derive(Serialize, Deserialize)]
